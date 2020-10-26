@@ -1,15 +1,5 @@
-const e = require("express");
 const express = require("express");
-const mysql = require("mysql2");
-
-//Объявление соединения
-const connection = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  database: "dnevnik_dump",
-  password: "",
-  multipleStatements: true,
-});
+const db = require("./db");
 
 //Служебные переменные
 let mysql_error = false;
@@ -28,7 +18,7 @@ const getunitsubjects = (req, res) => {
   }
   const zapros =
     "SELECT `dnevnik_units`.`name` as 'unit',`dnevnik_groups`.`id` as 'group_id',`dnevnik_groups`.`name` as 'group_name',`dnevnik_subjects`.`id` as 'subject_id',`dnevnik_subjects`.`name` as 'subject_name' FROM `dnevnik_groups` RIGHT JOIN `dnevnik_units` ON `dnevnik_groups`.`unit_id`=`dnevnik_units`.id RIGHT JOIN `dnevnik_subjects` ON `dnevnik_groups`.`subject_id`=`dnevnik_subjects`.`id` WHERE `dnevnik_units`.`name`=?";
-  connection.query(zapros, [req.query.unit], (err, results, fields) => {
+  db.query(zapros, [req.query.unit], (err, results, fields) => {
     if (err) return res.send(err.sqlMessage);
     if (results.length === 0)
       return res
@@ -52,13 +42,13 @@ const mediumsubjects = (req, res) => {
   }
   const zapros =
     "SELECT `dnevnik_units`.`name` as 'unit',`dnevnik_groups`.`id` as 'group_id',`dnevnik_groups`.`name` as 'group_name',`dnevnik_subjects`.`id` as 'subject_id',`dnevnik_subjects`.`name` as 'subject_name' FROM `dnevnik_groups` RIGHT JOIN `dnevnik_units` ON `dnevnik_groups`.`unit_id`=`dnevnik_units`.id RIGHT JOIN `dnevnik_subjects` ON `dnevnik_groups`.`subject_id`=`dnevnik_subjects`.`id` WHERE `dnevnik_units`.`name`=?";
-  connection.query(zapros, [req.query.unit], (err, results, fields) => {
+  db.query(zapros, [req.query.unit], (err, results, fields) => {
     if (err) return res.status(400).send(err.sqlMessage);
     if (results.length === 0)
       return res
         .status(400)
         .send("Информация по выбранному классу не найдена.");
-    res.header("Content-type", "application/json");
+
     let tmp = [
       { avg_mark: 0, group_id: [], title: "Алгебра", id: [46, 117] },
       { avg_mark: 0, group_id: [], title: "Биология", id: [57] },
@@ -71,10 +61,9 @@ const mediumsubjects = (req, res) => {
       { avg_mark: 0, group_id: [], title: "Химия", id: [58] },
       { avg_mark: 0, group_id: [], title: "Литература", id: [33] },
       { avg_mark: 0, group_id: [], title: "Обществознание", id: [44] },
-      { avg_mark: 0, group_id: [], title: "Русский язык", id: [3177] },
+      { avg_mark: 0, group_id: [], title: "Русский язык", id: [3177, 144632] },
       { avg_mark: 0, group_id: [], title: "Физическая культура", id: [20] },
       { avg_mark: 0, group_id: [], title: "ОБЖ", id: [59] },
-      { avg_mark: 0, group_id: [], title: "Технология", id: [19] },
     ];
     results.forEach((el) => {
       tmp.forEach((tmp_el, index) => {
@@ -88,25 +77,30 @@ const mediumsubjects = (req, res) => {
     tmp.forEach((el, index) => {
       let zpr =
         "SELECT sum(mark * weight) / sum(weight) as 'test' FROM `dnevnik_marks` WHERE `group_id` IN (?,?)";
-      connection.query(
+      db.query(
         zpr,
         [el.group_id[0], el.group_id[1] ? el.group_id[1] : ""],
         (err, results) => {
           tmp[index].avg_mark = results[0].test;
           if (index === tmp.length - 1) {
+            res.header("Content-type", "application/json");
             res.send(tmp);
           }
         }
       );
+      return tmp;
     });
+    // res.send(tmp);
   });
 };
 http_server.get("/mediumsubjects", mediumsubjects);
 
-http_server.get("/", (req, res) => {});
+http_server.get("/", (req, res) => {
+  res.send("1502 Statistics backend.");
+});
 
 //Подключение к БД
-connection.connect((err) => {
+db.connect((err) => {
   if (err) {
     mysql_error = "Ошибка: " + err.message;
     return console.error("Ошибка: " + err.message);
