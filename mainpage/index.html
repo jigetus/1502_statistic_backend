@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1502 Statistics API</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.3.1/styles/default.min.css"
+    />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.3.1/highlight.min.js"></script>
+    <script>
+      hljs.initHighlightingOnLoad();
+    </script>
+  </head>
+  <body>
+    <article class="markdown-body">
+      <h1>REST API Школы №1502 "Энергия", корпус Гамма</h1>
+      <p>
+        Данный сервис предоставляет возможность получения статистических
+        сведений по успеваемости учеников школы №1502, корпус Гамма. Сервис не
+        предоставляет возможности получения личных данных отдельных учеников, а
+        так же их оценок.
+      </p>
+      <!--  -->
+      <h2>Получение списка учебных групп по названию класса</h2>
+      <code>GET</code> <code>/getunitsubjects</code>
+      <h6>Обязательный QUERY параметр: <b>unit</b></h6>
+      <h4>Пример запроса:</h4>
+      <code>/getunitsubjects?unit=11-Л</code>
+      <h4>Ответ сервера:</h4>
+      <h5>Массив объектов, имеющих следующую структуру:</h5>
+      <pre><code class="javascript">{<br>"unit":"11-Л",<br>"group_id":5797383,<br>"group_name":"Технология использования современных измерительных приборов и оборудования 11Л1  (Гамма)",<br>"subject_id":18930,<br>"subject_name":"Технология использования современных измерительных приборов и оборудования"<br>}</code></pre>
+      <!--  -->
+      <h2>Получение средней оценки по главным предметам по названию класса</h2>
+      <code>GET</code> <code>/mediumsubjects</code>
+      <h6>Обязательный QUERY параметр: <b>unit</b></h6>
+      <h4>Пример запроса:</h4>
+      <code>/mediumsubjects?unit=11-Л</code>
+      <h4>Ответ сервера:</h4>
+      <h5>Массив объектов, имеющих следующую структуру:</h5>
+      <pre><code class="javascript">{<br>"avg_mark":3.4558823529411766,<br>"group_id":[5797398],<br>"title":"Алгебра",<br>"id":[46,117],<br>"unit":"11-Л"<br>}</code></pre>
+      <!--  -->
+      <h2>Получения лучших классов в предмете</h2>
+      TODO
+      <!--  -->
+      <h2>
+        Получение ТОП-10 классов в корпусе по среднему баллу всех предметов
+      </h2>
+      <code>GET</code> <code>/top10avg</code>
+      <h6>Обязательный QUERY параметр: <b>korpus</b></h6>
+      <h4>Пример запроса: (на данный момент доступен только корпус Гамма)</h4>
+      <code>/top10avg?korpus=gamma</code>
+      <h4>Ответ сервера:</h4>
+      <h5>
+        Массив объектов, имеющих следующую структуру и отсортированных в порядке
+        убывания
+      </h5>
+      <pre><code class="javascript">{<br>"AVG":4.39295848778316,<br>"unit":"8-Н"<br>}</code></pre>
+    </article>
+  </body>
+</html>

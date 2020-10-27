@@ -65,7 +65,7 @@ const insertclass = async (arr_subjects) => {
   return new Promise(async (resolve, reject) => {
     const promises = arr_subjects.map(async (subj) => {
       const a = await DBqueryasync(
-        "INSERT INTO `avg_cache` (`unit`,`title`,`avg_mark`,`subject_id`,`group_id`) values (?,?,?,?,?)",
+        "INSERT INTO `avg_cache_gamma` (`unit`,`title`,`avg_mark`,`subject_id`,`group_id`) values (?,?,?,?,?)",
         [
           subj.unit,
           subj.title,
@@ -91,10 +91,10 @@ const cache_medium_marks = async (array_of_units) => {
     const all_classes_medium = await Promise.all(promises);
     //записываем в базу данных результат;
     //1. Удаляем бд
-    DBqueryasync("DROP TABLE IF EXISTS avg_cache").then(() => {
+    DBqueryasync("DROP TABLE IF EXISTS avg_cache_gamma").then(() => {
       //2. Создание бд
       DBqueryasync(
-        `CREATE TABLE avg_cache (unit text,title text,avg_mark float,subject_id text, group_id text,date  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`
+        `CREATE TABLE avg_cache_gamma (unit text,title text,avg_mark float,subject_id text, group_id text,date  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`
       ).then(async () => {
         const proms = all_classes_medium.map(async (item) => {
           const u = await insertclass(item);
@@ -107,4 +107,4 @@ const cache_medium_marks = async (array_of_units) => {
   });
 };
 
-module.exports = cache_medium_marks;
+module.exports = { cache_medium_marks, genUnitMediumMarks };

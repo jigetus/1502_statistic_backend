@@ -4,19 +4,25 @@ require("log-timestamp")(function () {
   return "[" + new Date().toLocaleString() + "] %s";
 });
 
-const cache_medium_marks = require("./cache");
+const { genUnitMediumMarks, cache_medium_marks } = require("./cache");
+
+const ___DEBUG_NO_CACHE = true;
+
 const DBqueryasync = require("./DBqueryasync");
 //Служебные переменные
 let mysql_error = false;
 const port = 27015;
 const http_server = express();
+http_server.use(express.static("mainpage"));
 // -----------Методы API--------
 //------------------------------
 
 // GET /getunitsubjects?unit=11-Л
 const getunitsubjects = (req, res) => {
   if (!req.query.unit) {
-    return res.status(400).send("Отсутствует обязательный GET параметр: unit");
+    return res
+      .status(400)
+      .send("Отсутствует обязательный QUERY параметр: unit");
   }
   if (mysql_error) {
     return res.status(400).send(mysql_error);
@@ -38,22 +44,53 @@ http_server.get("/getunitsubjects", getunitsubjects);
 // GET mediumsubjects?unit=11-Л
 const mediumsubjects = async (req, res) => {
   if (!req.query.unit) {
-    return res.status(400).send("Отсутствует обязательный GET параметр: unit");
+    return res
+      .status(400)
+      .send("Отсутствует обязательный QUERY параметр: unit");
   }
   if (mysql_error) {
     return res.status(400).send(mysql_error);
   }
-  const units = JSON.parse(req.query.unit);
-  cache_medium_marks(units).then((result) => {
-    res.header("Content-type", "application/json").send(result);
-  });
+  genUnitMediumMarks(req.query.unit)
+    .then((answer) => {
+      res.send(answer);
+    })
+    .catch((error) => res.send(error.message));
 };
 http_server.get("/mediumsubjects", mediumsubjects);
 
-http_server.get("/", (req, res) => {
+//GET TOP 10 AVG mark /top10avg?korpus=gamma
+
+const top10avg = (req, res) => {
+  if (!req.query.korpus) {
+    return res
+      .status(400)
+      .send("Отсутствует обязательный GET параметр: korpus");
+  }
   if (mysql_error) {
     return res.status(400).send(mysql_error);
   }
+  switch (req.query.korpus) {
+    case "gamma":
+      DBqueryasync(
+        "SELECT AVG(avg_mark) as 'AVG',unit FROM `avg_cache_gamma` GROUP BY unit ORDER BY `AVG` DESC LIMIT 10"
+      )
+        .then((answer) => {
+          res.send(answer);
+        })
+        .catch((err) => console.log(err));
+      break;
+    default:
+      res
+        .status(400)
+        .send("Для корпуса " + req.query.korpus + " нет результатов.");
+      break;
+  }
+};
+http_server.get("/top10avg", top10avg);
+
+http_server.get("/", (req, res) => {
+  res.sendFile(__dirname + "/index.html");
 });
 
 //Подключение к БД
@@ -70,7 +107,7 @@ const mysql_error_handler = (err) => {
 db.connect(mysql_error_handler);
 
 //Производим первоначальное кэширование и запускаем сервер
-const classes = [
+const classes_gamma = [
   "7-Л",
   "7-М",
   "7-Н",
@@ -88,18 +125,25 @@ const classes = [
   "11-М",
   "11-Н",
 ];
-cache_medium_marks(classes).then(() => {
-  console.log("Средние оценки закешированы.");
-  //Запуск HTTP сервера
+
+if (___DEBUG_NO_CACHE) {
   http_server.listen(port, () => {
     console.log(`Сервис запущен на http://localhost:${port}`);
   });
-});
-
-setInterval(
-  () =>
-    cache_medium_marks(classes).then(
-      console.log("Средние оценки закешированы.")
-    ),
-  120000
-);
+} else {
+  cache_medium_marks(classes_gamma).then(() => {
+    console.log("Средние оценки закешированы.");
+    //Запуск HTTP сервера
+    http_server.listen(port, () => {
+      console.log(`Сервис запущен на http://localhost:${port}`);
+    });
+  });
+  //Кэширование раз в 2.5 часа
+  setInterval(
+    () =>
+      cache_medium_marks(classes).then(
+        console.log("Средние оценки закешированы.")
+      ),
+    9000000
+  );
+}
