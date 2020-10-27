@@ -51,16 +51,17 @@ const mediumsubjects = async (req, res) => {
   if (mysql_error) {
     return res.status(400).send(mysql_error);
   }
-  genUnitMediumMarks(req.query.unit)
+  DBqueryasync("SELECT unit,title,avg_mark from avg_cache_gamma where unit=?", [
+    req.query.unit,
+  ])
     .then((answer) => {
       res.send(answer);
     })
-    .catch((error) => res.send(error.message));
+    .catch((error) => res.send("error: " + error.message));
 };
 http_server.get("/mediumsubjects", mediumsubjects);
 
 //GET TOP 10 AVG mark /top10avg?korpus=gamma
-
 const top10avg = (req, res) => {
   if (!req.query.korpus) {
     return res
@@ -88,6 +89,35 @@ const top10avg = (req, res) => {
   }
 };
 http_server.get("/top10avg", top10avg);
+
+//GET BEST UNIT IN SUBJECT /bestunitsinsubjects?korpus=gamma
+const bestunitsinsubjects = (req, res) => {
+  if (!req.query.korpus) {
+    return res
+      .status(400)
+      .send("Отсутствует обязательный GET параметр: korpus");
+  }
+  if (mysql_error) {
+    return res.status(400).send(mysql_error);
+  }
+  switch (req.query.korpus) {
+    case "gamma":
+      DBqueryasync(
+        "SELECT max_mark, t.title, unit FROM ((SELECT max(avg_mark) as max_mark, title FROM `avg_cache_gamma` GROUP BY title ORDER BY title desc)) t LEFT JOIN `avg_cache_gamma` ac ON (t.title=ac.title AND t.max_mark=ac.avg_mark)"
+      )
+        .then((answer) => {
+          res.send(answer);
+        })
+        .catch((err) => console.log(err));
+      break;
+    default:
+      res
+        .status(400)
+        .send("Для корпуса " + req.query.korpus + " нет результатов.");
+      break;
+  }
+};
+http_server.get("/bestunitsinsubjects", bestunitsinsubjects);
 
 http_server.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
