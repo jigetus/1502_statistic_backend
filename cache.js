@@ -31,8 +31,8 @@ async function genUnitMediumMarks(unit) {
           title: "Русский язык",
           id: [3177, 144632],
         },
-        { avg_mark: 0, group_id: [], title: "Физическая культура", id: [20] },
-        { avg_mark: 0, group_id: [], title: "ОБЖ", id: [59] },
+        // { avg_mark: 0, group_id: [], title: "Физическая культура", id: [20] },
+        // { avg_mark: 0, group_id: [], title: "ОБЖ", id: [59] },
       ];
       results.forEach((el) => {
         tmp.forEach((tmp_el, index) => {

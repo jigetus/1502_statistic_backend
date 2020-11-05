@@ -4,9 +4,9 @@ require("log-timestamp")(function () {
   return "[" + new Date().toLocaleString() + "] %s";
 });
 
-const { genUnitMediumMarks, cache_medium_marks } = require("./cache");
+const { cache_medium_marks } = require("./cache");
 
-const ___DEBUG_NO_CACHE = true;
+const ___DEBUG_NO_CACHE = false;
 
 const DBqueryasync = require("./DBqueryasync");
 //Служебные переменные
