@@ -3,7 +3,7 @@ const db = require("./db");
 require("log-timestamp")(function () {
   return "[" + new Date().toLocaleString() + "] %s";
 });
-
+var cors = require("cors");
 const { cache_medium_marks } = require("./cache");
 
 const ___DEBUG_NO_CACHE = false;
@@ -13,6 +13,7 @@ const DBqueryasync = require("./DBqueryasync");
 let mysql_error = false;
 const port = 27015;
 const http_server = express();
+http_server.use(cors());
 http_server.use(express.static("mainpage"));
 // -----------Методы API--------
 //------------------------------
