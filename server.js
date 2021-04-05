@@ -3,7 +3,7 @@ const db = require("./db");
 require("log-timestamp")(function () {
   return "[" + new Date().toLocaleString() + "] %s";
 });
-var cors = require('cors');
+var cors = require("cors");
 
 const { cache_medium_marks } = require("./cache");
 
@@ -57,7 +57,20 @@ const mediumsubjects = async (req, res) => {
     req.query.unit,
   ])
     .then((answer) => {
-      res.send(answer);
+      if (answer.length === 0) {
+        DBqueryasync(
+          "SELECT unit,title,avg_mark from avg_cache_alfa where unit=?",
+          [req.query.unit]
+        ).then((answer2) => {
+          if (answer2.length === 0) {
+            return res.send("Информация по выбранному классу не найдена.");
+          }
+          res.header("Content-type", "application/json");
+          res.send(answer2);
+        });
+      } else {
+        return res.send(answer);
+      }
     })
     .catch((error) => res.send("error: " + error.message));
 };
@@ -77,6 +90,15 @@ const top10avg = (req, res) => {
     case "gamma":
       DBqueryasync(
         "SELECT AVG(avg_mark) as 'AVG',unit FROM `avg_cache_gamma` GROUP BY unit ORDER BY `AVG` DESC LIMIT 10"
+      )
+        .then((answer) => {
+          res.send(answer);
+        })
+        .catch((err) => console.log(err));
+      break;
+    case "alfa":
+      DBqueryasync(
+        "SELECT AVG(avg_mark) as 'AVG',unit FROM `avg_cache_alfa` GROUP BY unit ORDER BY `AVG` DESC LIMIT 10"
       )
         .then((answer) => {
           res.send(answer);
@@ -106,6 +128,15 @@ const bestunitsinsubjects = (req, res) => {
     case "gamma":
       DBqueryasync(
         "SELECT max_mark, t.title, unit FROM ((SELECT max(avg_mark) as max_mark, title FROM `avg_cache_gamma` GROUP BY title ORDER BY title desc)) t LEFT JOIN `avg_cache_gamma` ac ON (t.title=ac.title AND t.max_mark=ac.avg_mark)"
+      )
+        .then((answer) => {
+          res.send(answer);
+        })
+        .catch((err) => console.log(err));
+      break;
+    case "alfa":
+      DBqueryasync(
+        "SELECT max_mark, t.title, unit FROM ((SELECT max(avg_mark) as max_mark, title FROM `avg_cache_alfa` GROUP BY title ORDER BY title desc)) t LEFT JOIN `avg_cache_alfa` ac ON (t.title=ac.title AND t.max_mark=ac.avg_mark)"
       )
         .then((answer) => {
           res.send(answer);
@@ -157,25 +188,67 @@ const classes_gamma = [
   "11-М",
   "11-Н",
 ];
+const classes_alfa = [
+  "7-Г",
+  "7-Д",
+  "7-Е",
+  "7-Ж",
+  "8-Г",
+  "8-Д",
+  "8-Е",
+  "8-Ж",
+  "8-З",
+  "8-И",
+  "8-К",
+  "8-Ф",
+  "8-Ш",
+  "9-Г",
+  "9-Д",
+  "9-Е",
+  "9-Ж",
+  "9-З",
+  "9-И",
+  "9-К",
+  "10-В",
+  "10-Г",
+  "10-Д",
+  "10-Е",
+  "10-Ж",
+  "10-З",
+  "10-И",
+  "10-К",
+  "11-В",
+  "11-Г",
+  "11-Д",
+  "11-Е",
+  "11-Ж",
+  "11-З",
+  "11-И",
+  "11-К",
+];
 
 if (___DEBUG_NO_CACHE) {
   http_server.listen(port, () => {
     console.log(`Сервис запущен на http://localhost:${port}`);
   });
 } else {
-  cache_medium_marks(classes_gamma).then(() => {
-    console.log("Средние оценки закешированы.");
+  cache_medium_marks(classes_gamma, "gamma").then(() => {
+    console.log("Средние оценки закешированы. Корпус Гамма.");
     //Запуск HTTP сервера
-    http_server.listen(port, () => {
-      console.log(`Сервис запущен на http://localhost:${port}`);
+    cache_medium_marks(classes_alfa, "alfa").then(() => {
+      console.log("Средние оценки закешированы. Корпус Альфа.");
+      http_server.listen(port, () => {
+        console.log(`Сервис запущен на http://localhost:${port}`);
+      });
     });
   });
   //Кэширование раз в 2.5 часа
-  setInterval(
-    () =>
-      cache_medium_marks(classes).then(
-        console.log("Средние оценки закешированы.")
-      ),
-    9000000
-  );
+  setInterval(() => {
+    cache_medium_marks(classes_gamma, "gamma").then(
+      console.log("Средние оценки закешированы. Корпус Гамма.")
+    );
+    cache_medium_marks(classes_alfa, "alfa").then(
+      console.log("Средние оценки закешированы. Корпус Альфа.")
+    );
+  }, 250000);
 }

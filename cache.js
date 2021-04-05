@@ -4,7 +4,7 @@ require("log-timestamp")(function () {
   return "[" + new Date().toLocaleString() + "] %s";
 });
 
-async function genUnitMediumMarks(unit) {
+async function getUnitMediumMarks(unit) {
   return new Promise((resolve, reject) => {
     const zapros =
       "SELECT `dnevnik_units`.`name` as 'unit',`dnevnik_groups`.`id` as 'group_id',`dnevnik_groups`.`name` as 'group_name',`dnevnik_subjects`.`id` as 'subject_id',`dnevnik_subjects`.`name` as 'subject_name' FROM `dnevnik_groups` RIGHT JOIN `dnevnik_units` ON `dnevnik_groups`.`unit_id`=`dnevnik_units`.`id` RIGHT JOIN `dnevnik_subjects` ON `dnevnik_groups`.`subject_id`=`dnevnik_subjects`.`id` WHERE `dnevnik_units`.`name`=?";
@@ -31,8 +31,6 @@ async function genUnitMediumMarks(unit) {
           title: "Русский язык",
           id: [3177, 144632],
         },
-        // { avg_mark: 0, group_id: [], title: "Физическая культура", id: [20] },
-        // { avg_mark: 0, group_id: [], title: "ОБЖ", id: [59] },
       ];
       results.forEach((el) => {
         tmp.forEach((tmp_el, index) => {
@@ -61,11 +59,11 @@ async function genUnitMediumMarks(unit) {
   });
 }
 
-const insertclass = async (arr_subjects) => {
+const insertclass = async (arr_subjects, korpus) => {
   return new Promise(async (resolve, reject) => {
     const promises = arr_subjects.map(async (subj) => {
       const a = await DBqueryasync(
-        "INSERT INTO `avg_cache_gamma` (`unit`,`title`,`avg_mark`,`subject_id`,`group_id`) values (?,?,?,?,?)",
+        `INSERT INTO avg_cache_${korpus} (unit,title,avg_mark,subject_id,group_id) values (?,?,?,?,?)`,
         [
           subj.unit,
           subj.title,
@@ -81,23 +79,22 @@ const insertclass = async (arr_subjects) => {
   });
 };
 
-const cache_medium_marks = async (array_of_units) => {
-  console.log("Выполняю кэширование средних оценок...");
+const cache_medium_marks = async (array_of_units, korpus) => {
   return new Promise(async (resolve, reject) => {
     const promises = array_of_units.map(async (unit) => {
-      const mediums = await genUnitMediumMarks(unit);
+      const mediums = await getUnitMediumMarks(unit);
       return mediums;
     });
     const all_classes_medium = await Promise.all(promises);
     //записываем в базу данных результат;
     //1. Удаляем бд
-    DBqueryasync("DROP TABLE IF EXISTS avg_cache_gamma").then(() => {
+    DBqueryasync(`DROP TABLE IF EXISTS avg_cache_${korpus}`).then(() => {
       //2. Создание бд
       DBqueryasync(
-        `CREATE TABLE avg_cache_gamma (unit text,title text,avg_mark float,subject_id text, group_id text,date  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`
+        `CREATE TABLE avg_cache_${korpus} (unit text,title text,avg_mark float,subject_id text, group_id text,date  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`
       ).then(async () => {
         const proms = all_classes_medium.map(async (item) => {
-          const u = await insertclass(item);
+          const u = await insertclass(item, korpus);
           return u;
         });
         const done = await Promise.all(proms);
@@ -107,4 +104,4 @@ const cache_medium_marks = async (array_of_units) => {
   });
 };
 
-module.exports = { cache_medium_marks, genUnitMediumMarks };
+module.exports = { cache_medium_marks, getUnitMediumMarks };
