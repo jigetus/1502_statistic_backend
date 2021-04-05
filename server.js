@@ -3,7 +3,8 @@ const db = require("./db");
 require("log-timestamp")(function () {
   return "[" + new Date().toLocaleString() + "] %s";
 });
-var cors = require("cors");
+var cors = require('cors');
+
 const { cache_medium_marks } = require("./cache");
 
 const ___DEBUG_NO_CACHE = false;
